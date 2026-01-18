@@ -1,5 +1,9 @@
+Plot complex roots of a polynomial that you call from the terminal.
+Quicker than opening a new tab, going to Desmos, enabling complex plotting, and adding the function.
 
-Plot complex roots of a polynomial in z.
+## Some nice features
+- Rescales with a tiling WM (roughly)
+- Dark mode
 
 ## Requirements
 - Python 3.x
