@@ -1,5 +1,8 @@
 #!/home/eko/.venvs/proots/bin/python
+#Replace your user at the top 
+
 import argparse
+import sys
 
 import matplotlib.pyplot as plt
 import sympy as sp
@@ -11,6 +14,7 @@ class Args(argparse.Namespace):
     out: str
     save: bool
     transparent: bool
+    # close_terminal: bool
 
 
 def configure_plot_style(theme):
@@ -39,10 +43,11 @@ def configure_plot_style(theme):
 def build_parser():
     p = argparse.ArgumentParser(description="Plot complex roots of a polynomial in z.")
     p.add_argument("expr", help="Polynomial in z, e.g. z**3-1 (or z^3-1)")
-    p.add_argument("--save", action="store_true", help="Save image instead of showing GUI")
-    p.add_argument("--out", default="roots.png", help="Output image path (with --save)")
-    p.add_argument("--transparent", action="store_true", help="Save with transparent background")
-    return p
+    p.add_argument("--save","-s", action="store_true", help="Save image instead of showing GUI")
+    p.add_argument("--out","-o", default="roots.png", help="Output image path (with --save)")
+    p.add_argument("--transparent","-t", action="store_true", help="Save with transparent background")
+    # p.add_argument('--close-terminal', '-ct', action='store_true',help='Close terminal after launching plot')
+    return p # Returns the parser object
 
 
 def compute_poly(expr_text):
@@ -51,7 +56,15 @@ def compute_poly(expr_text):
     # Type checking here with expr:
     # You can make a dictionary that only lives in the function call only
     expr: sp.Expr = parse_expr(expr_src, local_dict={"z": z})
+    extra_symbols = expr.free_symbols - {z}
+    if extra_symbols:
+        extras = ", ".join(sorted(str(sym) for sym in extra_symbols))
+        raise ValueError(f"expression must use only z; extra symbols: {extras}")
+    if not expr.is_polynomial(z):
+        raise ValueError("expression must be a polynomial in z (no negative powers or functions like sin)")
     poly = sp.Poly(expr, z)
+    if poly.degree() <= 0:
+        raise ValueError("polynomial must have degree >= 1")
     roots = [complex(r.evalf()) for r in poly.nroots()]
     return poly, roots
 
@@ -126,16 +139,33 @@ def main():
     }
 
     configure_plot_style(theme)
+
+    # Method Chaining: cursed recomendation for refactor
     args = build_parser().parse_args(namespace=Args())
 
-    poly, roots = compute_poly(args.expr)
+    # Equivalent to
+    # parser = build_parser()
+    # args = parser.parse_args(namespace=Args())
+
+    # Apparently we gotta fork it before any matplotib gets to work
+    # if args.close_terminal:
+    import os
+    pid = os.fork()
+    if pid > 0:
+        sys.exit(0)
+
+    try:
+        poly, roots = compute_poly(args.expr)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        raise SystemExit(2)
     xs = [r.real for r in roots]
     ys = [r.imag for r in roots]
 
     fig, ax = plt.subplots()
     plot_roots(ax, xs, ys, poly, theme)
     attach_resize_scaling(fig, ax)
-    fig.subplots_adjust(left=0.12, right=0.98, bottom=0.08, top=0.95)
+    fig.subplots_adjust(left=0.12, right=0.98, bottom=0.14, top=0.86)
 
     if args.save:
         fig.savefig(args.out, dpi=180, transparent=args.transparent)
