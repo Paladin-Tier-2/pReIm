@@ -57,6 +57,7 @@ def compute_poly(expr_text):
     # You can make a dictionary that only lives in the function call only
     expr: sp.Expr = parse_expr(expr_src, local_dict={"z": z})
     extra_symbols = expr.free_symbols - {z}
+
     if extra_symbols:
         extras = ", ".join(sorted(str(sym) for sym in extra_symbols))
         raise ValueError(f"expression must use only z; extra symbols: {extras}")
@@ -65,6 +66,7 @@ def compute_poly(expr_text):
     poly = sp.Poly(expr, z)
     if poly.degree() <= 0:
         raise ValueError("polynomial must have degree >= 1")
+
     roots = [complex(r.evalf()) for r in poly.nroots()]
     return poly, roots
 
@@ -82,16 +84,11 @@ def plot_roots(ax, xs, ys, poly, theme):
     set_symmetric_limits(ax, xs, ys)
 
     for x, y in zip(xs, ys):
-        ax.plot([0, x], [0, y], color=theme["ray_color"], lw=2.4, zorder=1)
-    ax.scatter(
-        xs,
-        ys,
-        s=110,
-        color=theme["point_color"],
-        edgecolors=theme["bg"],
-        linewidths=1.0,
-        zorder=2,
-    )
+        ax.plot([0, x], [0, y], color=theme["ray_color"], lw=3.5, zorder=1,linestyle='--',dashes=(5,3),alpha=0.9)
+
+    ax.scatter(xs, ys, s=450, color=theme["point_color"], alpha=0.15, lw=0) # - Faint outide blue hue
+    ax.scatter(xs, ys, s=90, color=theme["point_color"], edgecolors="white", linewidths=2.0) # Blue core with white edges
+
     ax.set_aspect("auto")
     ax.set_xlabel("Re")
     ax.set_ylabel("Im")
